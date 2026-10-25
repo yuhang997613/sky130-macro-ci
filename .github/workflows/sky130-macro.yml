@@ -19,12 +19,16 @@ jobs:
             docker pull openroad/orfs:latest && break || sleep 15
           done
           docker image inspect openroad/orfs:latest > /dev/null
-          docker run --rm openroad/orfs:latest openroad -version
+          docker run --rm openroad/orfs:latest bash -lc "ls /OpenROAD-flow-scripts 2>/dev/null || true; find / -maxdepth 5 -name openroad -type f 2>/dev/null | head -3; find / -maxdepth 5 -name yosys -type f 2>/dev/null | head -3"
 
       - name: Synthesize + place & route + GDS inside ORFS
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work openroad/orfs:latest bash -lc '
             set -e
+            source /OpenROAD-flow-scripts/env.sh 2>/dev/null || true
+            export PATH=$PATH:/OpenROAD-flow-scripts/tools/install/OpenROAD/bin:/OpenROAD-flow-scripts/tools/install/yosys/bin
+            command -v yosys || true
+            command -v openroad || true
             mkdir -p sky130/out
             yosys -s sky130/synth/synth_mlc_macro.ys 2>&1 | tail -5
             openroad -no_init -exit sky130/pnr/run_mlc_macro_route_fix.tcl 2>&1 | tail -30
