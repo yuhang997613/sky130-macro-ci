@@ -55,15 +55,19 @@ jobs:
           '
           test -s sky130/out/drc_macro.lyrdb || echo "DRC deck produced no report"
 
-      - name: LVS (KLayout in ORFS container)
+      - name: LVS (KLayout in ORFS container, SPICE schematic)
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -v "$HOME/.volare:/pdk" -w /work openroad/orfs:latest bash -lc '
             set -x
-            ls /pdk/sky130A/libs.tech/klayout/lvs/ || true
+            source /OpenROAD-flow-scripts/env.sh 2>/dev/null || true
+            export PATH=$PATH:/OpenROAD-flow-scripts/tools/install/OpenROAD/bin:/OpenROAD-flow-scripts/tools/install/yosys/bin
+            PDK=/pdk/sky130A
+            yosys -p "read_verilog /work/sky130/out/mlc_storage_macro_routed.v; write_spice /work/sky130/out/routed.sp" || true
+            { cat "$PDK/libs.ref/sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice" /work/sky130/out/routed.sp /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.sp > /work/sky130/out/lvs_schematic.sp; } || true
             DECK=$(ls /pdk/sky130A/libs.tech/klayout/lvs/*.lvs 2>/dev/null | head -1)
             echo "LVS deck: $DECK"
             if [ -n "$DECK" ]; then
-              klayout -b -r "$DECK" -rd input=/work/sky130/out/mlc_storage_macro_merged.gds -rd schematic=/work/sky130/out/mlc_storage_macro_routed.v -rd report=/work/sky130/out/lvs_macro.rpt -rd topcell=mlc_storage_macro || true
+              klayout -b -r "$DECK" -rd input=/work/sky130/out/mlc_storage_macro_merged.gds -rd schematic=/work/sky130/out/lvs_schematic.sp -rd report=/work/sky130/out/lvs_macro.rpt -rd topcell=mlc_storage_macro || true
             fi
           '
           test -s sky130/out/lvs_macro.rpt || echo "LVS deck produced no report"
