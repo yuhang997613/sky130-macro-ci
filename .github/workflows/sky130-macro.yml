@@ -53,7 +53,8 @@ jobs:
             command -v klayout || true
             python3 -c "import klayout; print(\"klayout py ok\")" 2>&1 || true
             echo "--- platform ---"
-            ls /OpenROAD-flow-scripts/flow/platforms/sky130hd/lef 2>/dev/null || true
+            ls /OpenROAD-flow-scripts/flow/platforms/sky130hd 2>/dev/null || true
+            find /OpenROAD-flow-scripts/flow/platforms/sky130hd -maxdepth 4 \( -name "*.lyt" -o -name "*.map" \) 2>/dev/null | head -10 || true
           '
 
       - name: GDS check
