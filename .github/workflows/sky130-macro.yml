@@ -43,6 +43,19 @@ jobs:
           volare enable --pdk sky130 0fe599b2afb6708d281543108caf8310912f54af
           echo "PDK_ROOT=$HOME/.volare" >> "$GITHUB_ENV"
 
+      - name: Probe GDS utilities
+        run: |
+          docker run --rm openroad/orfs:latest bash -lc '
+            source /OpenROAD-flow-scripts/env.sh 2>/dev/null || true
+            echo "--- util ---"
+            ls /OpenROAD-flow-scripts/flow/util 2>/dev/null | head -40 || true
+            echo "--- klayout ---"
+            command -v klayout || true
+            python3 -c "import klayout; print(\"klayout py ok\")" 2>&1 || true
+            echo "--- platform ---"
+            ls /OpenROAD-flow-scripts/flow/platforms/sky130hd/lef 2>/dev/null || true
+          '
+
       - name: GDS check
         run: |
           test -f sky130/out/mlc_storage_macro.gds || { echo "no GDS from OpenROAD"; exit 1; }
