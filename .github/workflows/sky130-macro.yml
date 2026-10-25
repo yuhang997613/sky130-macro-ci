@@ -58,8 +58,14 @@ jobs:
       - name: LVS (KLayout in ORFS container)
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -v "$HOME/.volare:/pdk" -w /work openroad/orfs:latest bash -lc '
-            klayout -b -r /pdk/sky130A/libs.tech/klayout/lvs/sky130A.lvs -rd input=/work/sky130/out/mlc_storage_macro_merged.gds -rd schematic=/work/sky130/out/mlc_storage_macro_routed.v -rd report=/work/sky130/out/lvs_macro.rpt -rd topcell=mlc_storage_macro
-          ' || true
+            set -x
+            ls /pdk/sky130A/libs.tech/klayout/lvs/ || true
+            DECK=$(ls /pdk/sky130A/libs.tech/klayout/lvs/*.lvs 2>/dev/null | head -1)
+            echo "LVS deck: $DECK"
+            if [ -n "$DECK" ]; then
+              klayout -b -r "$DECK" -rd input=/work/sky130/out/mlc_storage_macro_merged.gds -rd schematic=/work/sky130/out/mlc_storage_macro_routed.v -rd report=/work/sky130/out/lvs_macro.rpt -rd topcell=mlc_storage_macro || true
+            fi
+          '
           test -s sky130/out/lvs_macro.rpt || echo "LVS deck produced no report"
 
       - uses: actions/upload-artifact@v4
