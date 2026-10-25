@@ -1,0 +1,65 @@
+name: sky130-macro
+
+on:
+  push:
+    paths:
+      - "sky130/**"
+  workflow_dispatch:
+
+jobs:
+  macro:
+    runs-on: ubuntu-22.04
+    container:
+      image: openroad/orfs:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PDK + KLayout + Netgen
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends klayout netgen-lvs python3-pip
+          pip3 install --no-cache-dir volare klayout
+          volare enable --pdk sky130 0fe599b2afb6708d281543108caf8310912f54af
+          echo "PDK_ROOT=$HOME/.volare" >> "$GITHUB_ENV"
+
+      - name: Synthesize (macro blackbox)
+        run: |
+          mkdir -p sky130/out
+          yosys -s sky130/synth/synth_mlc_macro.ys 2>&1 | tee sky130/out/synth_mlc_macro.log
+          grep -E "Number of cells|Chip area" sky130/out/synth_mlc_macro.log | tail -3
+
+      - name: Place & route (0-DRC fix flow)
+        run: |
+          openroad -no_init -exit sky130/pnr/run_mlc_macro_route_fix.tcl 2>&1 | tee sky130/out/pnr_mlc_macro_route.log
+          test -f sky130/out/mlc_storage_macro.def
+          test -s sky130/out/route_drc.rpt && { echo "router DRC not empty"; exit 1; } || true
+
+      - name: GDS (requires an OpenROAD with write_gds)
+        run: |
+          test -f sky130/out/mlc_storage_macro.gds || {
+            echo "write_gds not available in this OpenROAD build"; exit 1; }
+
+      - name: Merge OpenRAM macro GDS
+        run: |
+          python3 sky130/klayout/merge_macro.py \
+            sky130/out/mlc_storage_macro.gds \
+            sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds \
+            sky130/out/mlc_storage_macro_merged.gds 64 64
+
+      - name: DRC (KLayout sky130A_mr.drc)
+        run: |
+          bash sky130/drc/run_drc.sh sky130/out/mlc_storage_macro_merged.gds sky130/out/drc_macro.lyrdb
+          test -s sky130/out/drc_macro.lyrdb
+
+      - name: LVS (KLayout sky130A.lvs / Netgen)
+        run: |
+          bash sky130/lvs/run_lvs.sh sky130/out/mlc_storage_macro_merged.gds \
+               sky130/out/mlc_storage_macro_routed.v sky130/out/lvs_macro.rpt
+          test -s sky130/out/lvs_macro.rpt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sky130-macro-artifacts
+          path: sky130/out/
+          if-no-files-found: warn

@@ -1,0 +1,11 @@
+# synth_sky130.ys -- Yosys synthesis of the MLC storage controller to SKY130.
+# Run from the repo root:  yosys -s sky130/synth/synth_sky130.ys
+# Requires: flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib (ORFS platform copy)
+read_verilog apps/storage/mlc_storage.v
+synth -top mlc_storage
+dfflibmap -liberty flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib
+abc -liberty flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib
+opt_clean
+setundef -zero
+write_verilog -noattr sky130/out/mlc_storage_sky130.v
+stat -liberty flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib

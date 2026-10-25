@@ -1,0 +1,24 @@
+# synth_mlc_macro.ys -- Yosys synthesis of the macro-mapped MLC storage controller.
+# Run from the repo root:  yosys -s sky130/synth/synth_mlc_macro.ys
+#
+# The OpenRAM macro is pulled in as a blackbox from its Liberty (read_liberty -lib)
+# so the RTL instantiation survives synthesis untouched; standard cells come from
+# the sky130hd ORFS platform copy.
+
+# blackboxes: sky130 std cells + OpenRAM macro
+read_liberty -lib flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib
+read_liberty -lib sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib
+
+read_verilog sky130/rtl/mlc_storage_macro.v
+synth -top mlc_storage_macro
+
+dfflibmap -liberty flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib
+abc -liberty flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib
+opt_clean -purge
+setundef -zero
+
+# keep the macro instance and its connections in the netlist
+write_verilog -noattr sky130/out/mlc_storage_macro_sky130.v
+
+tee -o sky130/out/synth_mlc_macro.log stat -liberty flow/pdk/sky130hd/sky130_fd_sc_hd__tt_025C_1v80.lib
+stat

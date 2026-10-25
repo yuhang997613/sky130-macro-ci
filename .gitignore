@@ -1,0 +1,4 @@
+sky130/out/
+*.log
+*.vvp
+*.def
