@@ -19,19 +19,16 @@ jobs:
             docker pull openroad/orfs:latest && break || sleep 15
           done
           docker image inspect openroad/orfs:latest > /dev/null
-          docker run --rm openroad/orfs:latest bash -lc "ls /OpenROAD-flow-scripts 2>/dev/null || true; find / -maxdepth 5 -name openroad -type f 2>/dev/null | head -3; find / -maxdepth 5 -name yosys -type f 2>/dev/null | head -3"
 
-      - name: Synthesize + place & route + GDS inside ORFS
+      - name: Synthesize + place & route (OpenROAD)
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work openroad/orfs:latest bash -lc '
             set -e
             source /OpenROAD-flow-scripts/env.sh 2>/dev/null || true
             export PATH=$PATH:/OpenROAD-flow-scripts/tools/install/OpenROAD/bin:/OpenROAD-flow-scripts/tools/install/yosys/bin
-            command -v yosys || true
-            command -v openroad || true
             mkdir -p sky130/out
             yosys -s sky130/synth/synth_mlc_macro.ys 2>&1 | tail -5
-            openroad -no_init -exit sky130/pnr/run_mlc_macro_route_fix.tcl 2>&1 | tail -30
+            openroad -no_init -exit sky130/pnr/run_mlc_macro_route_fix.tcl 2>&1 | tail -20
             ls -l sky130/out
           '
 
@@ -39,35 +36,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends klayout netgen-lvs python3-pip
-          pip3 install --no-cache-dir volare klayout
+          pip3 install --no-cache-dir volare
           volare enable --pdk sky130 0fe599b2afb6708d281543108caf8310912f54af
           echo "PDK_ROOT=$HOME/.volare" >> "$GITHUB_ENV"
 
-      - name: Probe GDS utilities
+      - name: DEF -> GDS (KLayout def2stream, std cells + OpenRAM macro)
         run: |
-          docker run --rm openroad/orfs:latest bash -lc '
-            source /OpenROAD-flow-scripts/env.sh 2>/dev/null || true
-            echo "--- util ---"
-            ls /OpenROAD-flow-scripts/flow/util 2>/dev/null | head -40 || true
-            echo "--- klayout ---"
-            command -v klayout || true
-            python3 -c "import klayout; print(\"klayout py ok\")" 2>&1 || true
-            echo "--- platform ---"
-            ls /OpenROAD-flow-scripts/flow/platforms/sky130hd 2>/dev/null || true
-            find /OpenROAD-flow-scripts/flow/platforms/sky130hd -maxdepth 4 \( -name "*.lyt" -o -name "*.map" \) 2>/dev/null | head -10 || true
+          docker run --rm             -v "$GITHUB_WORKSPACE:/work"             -v "$HOME/.volare:/pdk"             -w /work openroad/orfs:latest bash -lc '
+            set -e
+            klayout -zz               -rd tech_file=/OpenROAD-flow-scripts/flow/platforms/sky130hd/sky130hd.lyt               -rd layer_map=               -rd in_def=/work/sky130/out/mlc_storage_macro.def               -rd design_name=mlc_storage_macro               -rd in_files="/pdk/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds"               -rd seal_file=               -rd out_file=/work/sky130/out/mlc_storage_macro_merged.gds               -r /OpenROAD-flow-scripts/flow/util/def2stream.py
+            ls -l /work/sky130/out/mlc_storage_macro_merged.gds
           '
-
-      - name: GDS check
-        run: |
-          test -f sky130/out/mlc_storage_macro.gds || { echo "no GDS from OpenROAD"; exit 1; }
-          ls -l sky130/out/mlc_storage_macro.gds
-
-      - name: Merge OpenRAM macro GDS
-        run: |
-          python3 sky130/klayout/merge_macro.py \
-            sky130/out/mlc_storage_macro.gds \
-            sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds \
-            sky130/out/mlc_storage_macro_merged.gds 64 64
 
       - name: DRC (KLayout sky130A_mr.drc)
         run: |
@@ -76,8 +55,7 @@ jobs:
 
       - name: LVS (KLayout sky130A.lvs / Netgen)
         run: |
-          bash sky130/lvs/run_lvs.sh sky130/out/mlc_storage_macro_merged.gds \
-               sky130/out/mlc_storage_macro_routed.v sky130/out/lvs_macro.rpt
+          bash sky130/lvs/run_lvs.sh sky130/out/mlc_storage_macro_merged.gds                sky130/out/mlc_storage_macro_routed.v sky130/out/lvs_macro.rpt
           test -s sky130/out/lvs_macro.rpt
 
       - uses: actions/upload-artifact@v4
