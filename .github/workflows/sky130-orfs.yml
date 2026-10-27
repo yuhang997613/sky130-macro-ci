@@ -1,0 +1,25 @@
+name: sky130-orfs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  orfs:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Official ORFS flow (synth -> PnR -> GDS -> LVS)
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -w /OpenROAD-flow-scripts \
+            openroad/orfs:latest \
+            bash /work/sky130/orfs/run_orfs.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sky130-orfs-results
+          path: |
+            sky130/out/
+          if-no-files-found: warn
