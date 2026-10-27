@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run the official ORFS flow (synth -> PnR -> GDS -> LVS) inside the ORFS image.
-set -euo pipefail
+set -eu
 
 DEST=/OpenROAD-flow-scripts/flow
 MACRO=/work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8
