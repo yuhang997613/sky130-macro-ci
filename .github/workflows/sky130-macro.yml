@@ -44,7 +44,9 @@ jobs:
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -v "$HOME/.volare:/pdk" -w /work openroad/orfs:latest bash -lc '
             set -e
-            klayout -zz -rd tech_file=/OpenROAD-flow-scripts/flow/platforms/sky130hd/sky130hd.lyt -rd layer_map= -rd in_def=/work/sky130/out/mlc_storage_macro.def -rd design_name=mlc_storage_macro -rd in_files="/pdk/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds" -rd seal_file= -rd out_file=/work/sky130/out/mlc_storage_macro_merged.gds -r /OpenROAD-flow-scripts/flow/util/def2stream.py
+            cp /OpenROAD-flow-scripts/flow/util/def2stream.py /work/def2stream_pins.py
+            python3 /work/sky130/klayout/patch_def2stream.py /work/def2stream_pins.py
+            klayout -zz -rd tech_file=/OpenROAD-flow-scripts/flow/platforms/sky130hd/sky130hd.lyt -rd layer_map= -rd in_def=/work/sky130/out/mlc_storage_macro.def -rd design_name=mlc_storage_macro -rd in_files="/pdk/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds" -rd seal_file= -rd out_file=/work/sky130/out/mlc_storage_macro_merged.gds -r /work/def2stream_pins.py
             ls -l /work/sky130/out/mlc_storage_macro_merged.gds
           '
 
