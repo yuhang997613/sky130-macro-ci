@@ -32,7 +32,7 @@ def main(in_def, in_gds, out_gds, topcell):
     src = open(in_def, errors="ignore").read()
 
     pins = []
-    m = re.search(r"\nPINS\s*;(.*?)\nEND PINS", src, re.S)
+    m = re.search(r"^\s*PINS\s+\d+\s*;(.*?)^\s*END PINS", src, re.S | re.M)
     if m:
         body = m.group(1)
         for blk in re.split(r"\n\s*-\s+", "\n" + body):
@@ -40,7 +40,7 @@ def main(in_def, in_gds, out_gds, topcell):
                 continue
             name = blk.split()[0]
             layer = re.search(r"\+ LAYER\s+(\w+)", blk)
-            placed = re.search(r"\+ PLACED\s*\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
+            placed = re.search(r"\+ (?:PLACED|FIXED)\s*\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
             if not placed:
                 pair = re.search(r"\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
                 placed = pair
