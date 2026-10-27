@@ -26,6 +26,7 @@ export ADDITIONAL_LIBS = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storag
 export CORE_UTILIZATION = 40
 export PLACE_DENSITY = 0.5
 export MACRO_PLACEMENT = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/macro_placement.tcl
+export PDN_TCL = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/pdn.tcl
 EOF
 
 cat > "$DEST/designs/sky130hd/mlc_storage/constraint.sdc" <<'EOF'
@@ -39,6 +40,9 @@ EOF
 cat > "$DEST/designs/sky130hd/mlc_storage/macro_placement.tcl" <<'EOF'
 place_macro -macro_name u_sram -location {64 64} -orientation N
 EOF
+
+cp "$DEST/platforms/sky130hd/pdn.tcl" "$DEST/designs/sky130hd/mlc_storage/pdn.tcl"
+sed -i '/CORE_macro_grid_1/d' "$DEST/designs/sky130hd/mlc_storage/pdn.tcl"
 
 cd "$DEST"
 make DESIGN_CONFIG=./designs/sky130hd/mlc_storage/config.mk
