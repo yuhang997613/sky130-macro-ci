@@ -63,6 +63,8 @@ jobs:
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -v "$HOME/.volare:/pdk" -w /work openroad/orfs:latest bash -lc '
             set -x
+            echo "=== LVS deck label lines ==="
+            grep -n -E "labels|text|TEXT|label" /pdk/sky130A/libs.tech/klayout/lvs/sky130.lvs | head -40 || true
             source /OpenROAD-flow-scripts/env.sh 2>/dev/null || true
             export PATH=$PATH:/OpenROAD-flow-scripts/tools/install/OpenROAD/bin:/OpenROAD-flow-scripts/tools/install/yosys/bin
             PDK=/pdk/sky130A
