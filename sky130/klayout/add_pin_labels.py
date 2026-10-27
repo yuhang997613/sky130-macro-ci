@@ -1,8 +1,4 @@
-"""Add net labels taken from DEF routing (ROUTED) to the merged GDS for LVS.
-
-Labels are placed on the first routed point of each net, on the label layers
-used by the sky130 LVS deck (metN datatype 5).
-"""
+"""Label only the top-level DEF pins, at a routed point of their own net."""
 import re
 
 import pya
@@ -31,29 +27,36 @@ def add_text(cell, layer_name, name, x, y):
 def main(in_def, in_gds, out_gds, topcell):
     src = open(in_def, errors="ignore").read()
 
-    labels = []
+    pins = []
+    m = re.search(r"^\s*PINS\s+\d+\s*;(.*?)^\s*END PINS", src, re.S | re.M)
+    if m:
+        for blk in re.split(r"\n\s*-\s+", "\n" + m.group(1)):
+            if blk.strip():
+                pins.append(blk.split()[0])
+
+    net_point = {}
     m = re.search(r"^\s*NETS\s+\d+\s*;(.*?)^\s*END NETS", src, re.S | re.M)
     if m:
-        body = m.group(1)
-        for blk in re.split(r"\n\s*-\s+", "\n" + body):
+        for blk in re.split(r"\n\s*-\s+", "\n" + m.group(1)):
             if not blk.strip():
                 continue
             name = blk.split()[0]
             mm = re.search(r"\+ ROUTED\s+(\w+)\s*\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
             if mm:
-                labels.append((name, mm.group(1), int(mm.group(2)), int(mm.group(3))))
+                net_point[name] = (mm.group(1), int(mm.group(2)), int(mm.group(3)))
 
     ly = pya.Layout()
     ly.read(in_gds)
     cell = ly.cell(topcell) or ly.top_cell()
 
     n = 0
-    for name, layer, x, y in labels:
-        if add_text(cell, layer, name, x, y):
+    for name in pins:
+        pt = net_point.get(name)
+        if pt and add_text(cell, pt[0], name, pt[1], pt[2]):
             n += 1
 
     ly.write(out_gds)
-    print("added net labels:", n, "->", out_gds)
+    print("added port labels:", n, "of", len(pins), "->", out_gds)
 
 
 main(in_def, in_gds, out_gds, topcell)
