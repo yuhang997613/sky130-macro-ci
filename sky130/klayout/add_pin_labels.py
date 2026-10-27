@@ -1,4 +1,4 @@
-"""Label top-level ports on met2+ routing (plus power nets) for sky130 LVS."""
+"""Label top-level ports and power nets for sky130 LVS (metal + txt layer)."""
 import re
 
 import pya
@@ -11,6 +11,7 @@ LAYERS = {
     "met4": (71, 5),
     "met5": (72, 5),
 }
+TXT = (83, 44)
 PREF = ("met2", "met3", "met4", "met5")
 
 
@@ -19,14 +20,15 @@ def norm(s):
 
 
 def add_text(cell, layer_name, name, x, y):
+    inserted = False
     key = LAYERS.get(layer_name)
-    if not key:
-        return False
-    li = cell.layout().layer(*key)
-    t = pya.Text(name, pya.Trans(int(x), int(y)))
-    t.size = 1000
-    cell.shapes(li).insert(t)
-    return True
+    for lk in ([key] if key else []) + [TXT]:
+        li = cell.layout().layer(*lk)
+        t = pya.Text(name, pya.Trans(int(x), int(y)))
+        t.size = 1000
+        cell.shapes(li).insert(t)
+        inserted = True
+    return inserted
 
 
 def pick_point(points):
