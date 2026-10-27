@@ -42,9 +42,9 @@ jobs:
 
       - name: DEF -> GDS (KLayout def2stream, std cells + OpenRAM macro)
         run: |
-          docker run --rm             -v "$GITHUB_WORKSPACE:/work"             -v "$HOME/.volare:/pdk"             -w /work openroad/orfs:latest bash -lc '
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -v "$HOME/.volare:/pdk" -w /work openroad/orfs:latest bash -lc '
             set -e
-            klayout -zz               -rd tech_file=/OpenROAD-flow-scripts/flow/platforms/sky130hd/sky130hd.lyt               -rd layer_map=               -rd in_def=/work/sky130/out/mlc_storage_macro.def               -rd design_name=mlc_storage_macro               -rd in_files="/pdk/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds"               -rd seal_file=               -rd out_file=/work/sky130/out/mlc_storage_macro_merged.gds               -r /OpenROAD-flow-scripts/flow/util/def2stream.py
+            klayout -zz -rd tech_file=/OpenROAD-flow-scripts/flow/platforms/sky130hd/sky130hd.lyt -rd layer_map= -rd in_def=/work/sky130/out/mlc_storage_macro.def -rd design_name=mlc_storage_macro -rd in_files="/pdk/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds" -rd seal_file= -rd out_file=/work/sky130/out/mlc_storage_macro_merged.gds -r /OpenROAD-flow-scripts/flow/util/def2stream.py
             ls -l /work/sky130/out/mlc_storage_macro_merged.gds
           '
 
@@ -55,7 +55,7 @@ jobs:
           '
           test -s sky130/out/drc_macro.lyrdb || echo "DRC deck produced no report"
 
-      - name: LVS (KLayout in ORFS container, SPICE schematic)
+      - name: LVS (KLayout in ORFS container, pin-padded SPICE)
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -v "$HOME/.volare:/pdk" -w /work openroad/orfs:latest bash -lc '
             set -x
@@ -63,10 +63,9 @@ jobs:
             export PATH=$PATH:/OpenROAD-flow-scripts/tools/install/OpenROAD/bin:/OpenROAD-flow-scripts/tools/install/yosys/bin
             PDK=/pdk/sky130A
             yosys -p "read_verilog /work/sky130/out/mlc_storage_macro_routed.v; write_spice /work/sky130/out/routed.sp" || true
-            sed -E "s/([[:space:]])sky130_sram_1kbyte_1rw1r_32x256_8[[:space:]]*$/\1vccd1 vssd1 sky130_sram_1kbyte_1rw1r_32x256_8/" /work/sky130/out/routed.sp > /work/sky130/out/routed_fixed.sp || true
-            sed -E "s/^(X[0-9]+[[:space:]].*[[:space:]])sky130_fd_sc_hd__([a-zA-Z0-9_]+)[[:space:]]*$/\1VDD VSS VPB VNB sky130_fd_sc_hd__\2/" /work/sky130/out/routed_fixed.sp > /work/sky130/out/routed_fixed2.sp || true
-            printf ".GLOBAL vccd1 vssd1 VDD VSS VPB VNB\n" > /work/sky130/out/lvs_schematic.sp
-            { cat "$PDK/libs.ref/sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice" /work/sky130/out/routed_fixed2.sp /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.sp >> /work/sky130/out/lvs_schematic.sp; } || true
+            python3 /work/sky130/klayout/fix_spice.py "$PDK/libs.ref/sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice" /work/sky130/out/routed.sp /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.sp /work/sky130/out/routed_fixed.sp || true
+            printf ".GLOBAL vccd1 vssd1 VPWR VGND VPB VNB\n" > /work/sky130/out/lvs_schematic.sp
+            { cat "$PDK/libs.ref/sky130_fd_sc_hd/spice/sky130_fd_sc_hd.spice" /work/sky130/out/routed_fixed.sp /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.sp >> /work/sky130/out/lvs_schematic.sp; } || true
             DECK=$(ls /pdk/sky130A/libs.tech/klayout/lvs/*.lvs 2>/dev/null | head -1)
             echo "LVS deck: $DECK"
             if [ -n "$DECK" ]; then
