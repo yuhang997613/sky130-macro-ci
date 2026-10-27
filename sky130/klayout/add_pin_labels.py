@@ -1,7 +1,7 @@
-"""Add DEF pin labels (and power labels) to the merged GDS for LVS.
+"""Add net labels taken from DEF routing (ROUTED) to the merged GDS for LVS.
 
-Run with KLayout's embedded Python:
-  klayout -b -r add_pin_labels.py -rd in_def=... -rd in_gds=... -rd out_gds=... -rd topcell=...
+Labels are placed on the first routed point of each net, on the label layers
+used by the sky130 LVS deck (metN datatype 5).
 """
 import re
 
@@ -31,52 +31,29 @@ def add_text(cell, layer_name, name, x, y):
 def main(in_def, in_gds, out_gds, topcell):
     src = open(in_def, errors="ignore").read()
 
-    pins = []
-    m = re.search(r"^\s*PINS\s+\d+\s*;(.*?)^\s*END PINS", src, re.S | re.M)
+    labels = []
+    m = re.search(r"^\s*NETS\s+\d+\s*;(.*?)^\s*END NETS", src, re.S | re.M)
     if m:
         body = m.group(1)
         for blk in re.split(r"\n\s*-\s+", "\n" + body):
             if not blk.strip():
                 continue
             name = blk.split()[0]
-            layer = re.search(r"\+ LAYER\s+(\w+)", blk)
-            placed = re.search(r"\+ (?:PLACED|FIXED)\s*\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
-            if not placed:
-                pair = re.search(r"\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
-                placed = pair
-            if layer and placed:
-                pins.append((name, layer.group(1), int(placed.group(1)), int(placed.group(2))))
-
-    power = []
-    m = re.search(r"\nSPECIALNETS\s+\d+\s*;(.*?)\nEND SPECIALNETS", src, re.S)
-    if m:
-        body = m.group(1)
-        for blk in re.split(r"\n\s*-\s+", "\n" + body):
-            if not blk.strip():
-                continue
-            name = blk.split()[0]
-            if name not in ("VPWR", "VGND"):
-                continue
-            layer = re.search(r"\+ (?:ROUTED|LAYER)\s+(\w+)", blk)
-            pair = re.search(r"\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
-            if layer and pair:
-                power.append((name, layer.group(1), int(pair.group(1)), int(pair.group(2))))
+            mm = re.search(r"\+ ROUTED\s+(\w+)\s*\(\s*(-?\d+)\s+(-?\d+)\s*\)", blk)
+            if mm:
+                labels.append((name, mm.group(1), int(mm.group(2)), int(mm.group(3))))
 
     ly = pya.Layout()
     ly.read(in_gds)
     cell = ly.cell(topcell) or ly.top_cell()
 
     n = 0
-    for name, layer, x, y in pins:
+    for name, layer, x, y in labels:
         if add_text(cell, layer, name, x, y):
             n += 1
-    p = 0
-    for name, layer, x, y in power:
-        if add_text(cell, layer, name, x, y):
-            p += 1
 
     ly.write(out_gds)
-    print("added pin labels:", n, "power labels:", p, "->", out_gds)
+    print("added net labels:", n, "->", out_gds)
 
 
 main(in_def, in_gds, out_gds, topcell)
