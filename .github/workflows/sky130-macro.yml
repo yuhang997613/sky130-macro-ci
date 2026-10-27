@@ -33,11 +33,17 @@ jobs:
           '
 
       - name: Install PDK + KLayout/Netgen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends klayout netgen-lvs python3-pip
           pip3 install --no-cache-dir volare
-          volare enable --pdk sky130 0fe599b2afb6708d281543108caf8310912f54af
+          for i in 1 2 3 4 5; do
+            volare enable --pdk sky130 0fe599b2afb6708d281543108caf8310912f54af && break
+            echo "volare retry $i"; sleep 30
+          done
+          test -d "$HOME/.volare/sky130A"
           echo "PDK_ROOT=$HOME/.volare" >> "$GITHUB_ENV"
 
       - name: DEF -> GDS (KLayout def2stream, std cells + OpenRAM macro)
