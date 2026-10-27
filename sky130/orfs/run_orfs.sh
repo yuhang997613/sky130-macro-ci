@@ -2,7 +2,7 @@
 # Run the official ORFS flow (synth -> PnR -> GDS -> LVS) inside the ORFS image.
 set -euo pipefail
 
-DEST=/OpenROAD-flow-scripts
+DEST=/OpenROAD-flow-scripts/flow
 MACRO=/work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8
 
 mkdir -p "$DEST/designs/src/mlc_storage"
@@ -14,7 +14,7 @@ cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib" "$DEST/designs/sky
 
 # patched std-cell LEF: RESET_B li1 pin widened for via access
 cp /work/sky130/pdk_fix/sky130_fd_sc_hd_merged_fix.lef \
-   "$DEST/flow/platforms/sky130hd/lef/sky130_fd_sc_hd_merged.lef"
+   "$DEST/platforms/sky130hd/lef/sky130_fd_sc_hd_merged.lef"
 
 cat > "$DEST/designs/sky130hd/mlc_storage/config.mk" <<'EOF'
 export DESIGN_NAME = mlc_storage_macro
