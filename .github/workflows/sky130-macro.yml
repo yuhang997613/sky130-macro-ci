@@ -48,12 +48,14 @@ jobs:
             python3 /work/sky130/klayout/patch_def2stream.py /work/def2stream_pins.py
             klayout -zz -rd tech_file=/OpenROAD-flow-scripts/flow/platforms/sky130hd/sky130hd.lyt -rd layer_map= -rd in_def=/work/sky130/out/mlc_storage_macro.def -rd design_name=mlc_storage_macro -rd in_files="/pdk/sky130A/libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds /work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/sky130_sram_1kbyte_1rw1r_32x256_8.gds" -rd seal_file= -rd out_file=/work/sky130/out/mlc_storage_macro_merged.gds -r /work/def2stream_pins.py
             ls -l /work/sky130/out/mlc_storage_macro_merged.gds
+            klayout -b -r /work/sky130/klayout/add_pin_labels.py -rd in_def=/work/sky130/out/mlc_storage_macro.def -rd in_gds=/work/sky130/out/mlc_storage_macro_merged.gds -rd out_gds=/work/sky130/out/mlc_storage_macro_labeled.gds -rd topcell=mlc_storage_macro
+            ls -l /work/sky130/out/mlc_storage_macro_labeled.gds
           '
 
       - name: DRC (KLayout in ORFS container)
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -v "$HOME/.volare:/pdk" -w /work openroad/orfs:latest bash -lc '
-            klayout -b -r /pdk/sky130A/libs.tech/klayout/drc/sky130A_mr.drc -rd input=/work/sky130/out/mlc_storage_macro_merged.gds -rd report=/work/sky130/out/drc_macro.lyrdb -rd topcell=mlc_storage_macro
+            klayout -b -r /pdk/sky130A/libs.tech/klayout/drc/sky130A_mr.drc -rd input=/work/sky130/out/mlc_storage_macro_labeled.gds -rd report=/work/sky130/out/drc_macro.lyrdb -rd topcell=mlc_storage_macro
           '
           test -s sky130/out/drc_macro.lyrdb || echo "DRC deck produced no report"
 
@@ -71,7 +73,7 @@ jobs:
             DECK=$(ls /pdk/sky130A/libs.tech/klayout/lvs/*.lvs 2>/dev/null | head -1)
             echo "LVS deck: $DECK"
             if [ -n "$DECK" ]; then
-              klayout -b -r "$DECK" -rd input=/work/sky130/out/mlc_storage_macro_merged.gds -rd schematic=/work/sky130/out/lvs_schematic.sp -rd report=/work/sky130/out/lvs_macro.rpt -rd topcell=mlc_storage_macro || true
+              klayout -b -r "$DECK" -rd input=/work/sky130/out/mlc_storage_macro_labeled.gds -rd schematic=/work/sky130/out/lvs_schematic.sp -rd report=/work/sky130/out/lvs_macro.rpt -rd topcell=mlc_storage_macro || true
             fi
           '
           test -s sky130/out/lvs_macro.rpt || echo "LVS deck produced no report"
