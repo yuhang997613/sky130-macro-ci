@@ -15,7 +15,7 @@ cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.gds" "$DESIGN_DIR/gds/"
 cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.sp" "$DESIGN_DIR/cdl/"
 
 # combined masters CDL: sky130 std cells + OpenRAM macro
-cat "$DEST/platforms/sky130hd/cdl/sky130_fd_sc_hd.cdl" \
+cat "$DEST/platforms/sky130hd/cdl/sky130hd.cdl" \
     "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.sp" \
     > "$DESIGN_DIR/cdl/masters.cdl"
 
