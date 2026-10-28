@@ -67,7 +67,12 @@ pat1 = re.compile(
     r"define_pdn_grid -name \{CORE_macro_grid_1\}.*?add_pdn_connect -grid \{CORE_macro_grid_1\} -layers \{met4 met5\}\n",
     re.S,
 )
-repl1 = "# macro grid disabled (macro PDN handled outside ORFS)\n"
+repl1 = """define_pdn_grid -name {CORE_macro_grid_1} -voltage_domains {CORE} -macro \\
+  -cells {sky130_sram_1kbyte_1rw1r_32x256_8} \\
+  -orient {R0 R180 MX MY} -halo {2.0 2.0 2.0 2.0} -grid_over_boundary
+add_pdn_stripe -grid {CORE_macro_grid_1} -layer {met4} -width {0.28} -pitch {4.48} -offset {5.04}
+add_pdn_connect -grid {CORE_macro_grid_1} -layers {met4 met5}
+"""
 s, n1 = pat1.subn(repl1, s, count=1)
 
 pat2 = re.compile(
@@ -85,3 +90,7 @@ make DESIGN_CONFIG=./designs/sky130hd/mlc_storage/config.mk
 make DESIGN_CONFIG=./designs/sky130hd/mlc_storage/config.mk lvs
 
 ls -l results/sky130hd/mlc_storage_macro/base 2>/dev/null || true
+
+# export ORFS results for artifact upload
+mkdir -p /work/sky130/out/orfs_results
+cp -r results/sky130hd/mlc_storage_macro/base/* /work/sky130/out/orfs_results/ 2>/dev/null || true
