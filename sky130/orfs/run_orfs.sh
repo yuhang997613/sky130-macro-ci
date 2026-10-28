@@ -14,10 +14,9 @@ cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib" "$DESIGN_DIR/lib/"
 cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.gds" "$DESIGN_DIR/gds/"
 cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.sp" "$DESIGN_DIR/cdl/"
 
-# combined masters CDL: sky130 std cells + OpenRAM macro
-cat "$DEST/platforms/sky130hd/cdl/sky130hd.cdl" \
-    "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.sp" \
-    > "$DESIGN_DIR/cdl/masters.cdl"
+# append OpenRAM macro CDL to the platform masters CDL
+cat "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.sp" \
+    >> "$DEST/platforms/sky130hd/cdl/sky130hd.cdl"
 
 # patched std-cell LEF (RESET_B li1 widened for via access)
 cp /work/sky130/pdk_fix/sky130_fd_sc_hd_merged_fix.lef \
@@ -31,7 +30,7 @@ export SDC_FILE = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/const
 export ADDITIONAL_LEFS = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/lef/sky130_sram_1kbyte_1rw1r_32x256_8.lef
 export ADDITIONAL_LIBS = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/lib/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib
 export ADDITIONAL_GDS = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/gds/sky130_sram_1kbyte_1rw1r_32x256_8.gds
-export CDL_FILE = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/cdl/masters.cdl
+
 export CORE_UTILIZATION = 40
 export PLACE_DENSITY = 0.5
 export MACRO_PLACEMENT = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/macro_placement.tcl
