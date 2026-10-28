@@ -50,8 +50,8 @@ place_macro -macro_name u_sram -location {64 64} -orientation N
 EOF
 
 {
-  echo 'add_global_connection -net VPWR -inst_pattern {u_sram} -pin_pattern {vccd1} -power'
-  echo 'add_global_connection -net VGND -inst_pattern {u_sram} -pin_pattern {vssd1} -ground'
+  echo 'add_global_connection -net VDD -inst_pattern {.*} -pin_pattern {vccd1} -power'
+  echo 'add_global_connection -net VSS -inst_pattern {.*} -pin_pattern {vssd1} -ground'
   cat "$DEST/platforms/sky130hd/pdn.tcl"
 } > "$DESIGN_DIR/pdn.tcl"
 
@@ -72,13 +72,13 @@ repl1 = """define_pdn_grid -name {CORE_macro_grid_1} -voltage_domains {CORE} -ma
 add_pdn_stripe -grid {CORE_macro_grid_1} -layer {met4} -width {0.28} -pitch {4.48} -offset {5.04}
 add_pdn_connect -grid {CORE_macro_grid_1} -layers {met4 met5}
 """
-s, n1 = pat1.subn(repl1, s, count=1)
+s, n1 = s, 0
 
 pat2 = re.compile(
     r"define_pdn_grid -name \{CORE_macro_grid_2\}.*?add_pdn_connect -grid \{CORE_macro_grid_2\} -layers \{met4 met5\}\n",
     re.S,
 )
-s, n2 = pat2.subn("", s, count=1)
+s, n2 = s, 0
 
 open(path, "w").write(s)
 print("pdn patch: grid1", n1, "grid2", n2)
