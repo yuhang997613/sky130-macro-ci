@@ -6,11 +6,12 @@ DEST=/OpenROAD-flow-scripts/flow
 MACRO=/work/sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8
 DESIGN_DIR="$DEST/designs/sky130hd/mlc_storage"
 
-mkdir -p "$DEST/designs/src/mlc_storage" "$DESIGN_DIR/lef" "$DESIGN_DIR/lib"
+mkdir -p "$DEST/designs/src/mlc_storage" "$DESIGN_DIR/lef" "$DESIGN_DIR/lib" "$DESIGN_DIR/gds"
 
 cp /work/sky130/rtl/mlc_storage_macro.v "$DEST/designs/src/mlc_storage/"
 cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.lef" "$DESIGN_DIR/lef/"
 cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib" "$DESIGN_DIR/lib/"
+cp "$MACRO/sky130_sram_1kbyte_1rw1r_32x256_8.gds" "$DESIGN_DIR/gds/"
 
 # patched std-cell LEF (RESET_B li1 widened for via access)
 cp /work/sky130/pdk_fix/sky130_fd_sc_hd_merged_fix.lef \
@@ -23,6 +24,7 @@ export VERILOG_FILES = /OpenROAD-flow-scripts/flow/designs/src/mlc_storage/mlc_s
 export SDC_FILE = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/constraint.sdc
 export ADDITIONAL_LEFS = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/lef/sky130_sram_1kbyte_1rw1r_32x256_8.lef
 export ADDITIONAL_LIBS = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/lib/sky130_sram_1kbyte_1rw1r_32x256_8_TT_1p8V_25C.lib
+export ADDITIONAL_GDS = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/gds/sky130_sram_1kbyte_1rw1r_32x256_8.gds
 export CORE_UTILIZATION = 40
 export PLACE_DENSITY = 0.5
 export MACRO_PLACEMENT = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/macro_placement.tcl
