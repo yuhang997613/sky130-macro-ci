@@ -49,12 +49,11 @@ cat > "$DESIGN_DIR/macro_placement.tcl" <<'EOF'
 place_macro -macro_name u_sram -location {64 64} -orientation N
 EOF
 
-cp "$DEST/platforms/sky130hd/pdn.tcl" "$DESIGN_DIR/pdn.tcl"
-
-cat >> "$DESIGN_DIR/pdn.tcl" <<'EOF'
-add_global_connection -net VPWR -inst_pattern {u_sram} -pin_pattern {vccd1} -power
-add_global_connection -net VGND -inst_pattern {u_sram} -pin_pattern {vssd1} -ground
-EOF
+{
+  echo 'add_global_connection -net VPWR -inst_pattern {u_sram} -pin_pattern {vccd1} -power'
+  echo 'add_global_connection -net VGND -inst_pattern {u_sram} -pin_pattern {vssd1} -ground'
+  cat "$DEST/platforms/sky130hd/pdn.tcl"
+} > "$DESIGN_DIR/pdn.tcl"
 
 python3 - "$DESIGN_DIR/pdn.tcl" <<'PYEOF'
 import re
