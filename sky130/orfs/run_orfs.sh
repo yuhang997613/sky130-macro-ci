@@ -51,6 +51,11 @@ EOF
 
 cp "$DEST/platforms/sky130hd/pdn.tcl" "$DESIGN_DIR/pdn.tcl"
 
+cat >> "$DESIGN_DIR/pdn.tcl" <<'EOF'
+add_global_connection -net VPWR -inst_pattern {u_sram} -pin_pattern {vccd1} -power
+add_global_connection -net VGND -inst_pattern {u_sram} -pin_pattern {vssd1} -ground
+EOF
+
 python3 - "$DESIGN_DIR/pdn.tcl" <<'PYEOF'
 import re
 import sys
