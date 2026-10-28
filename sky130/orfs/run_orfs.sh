@@ -35,6 +35,7 @@ export CORE_UTILIZATION = 40
 export PLACE_DENSITY = 0.5
 export MACRO_PLACEMENT = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/macro_placement.tcl
 export PDN_TCL = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/pdn.tcl
+export KLAYOUT_LVS_FILE = /OpenROAD-flow-scripts/flow/designs/sky130hd/mlc_storage/sky130hd.lylvs
 EOF
 
 cat > "$DESIGN_DIR/constraint.sdc" <<'EOF'
@@ -82,6 +83,30 @@ s, n2 = s, 0
 
 open(path, "w").write(s)
 print("pdn patch: grid1", n1, "grid2", n2)
+PYEOF
+
+cp "$DEST/platforms/sky130hd/lvs/sky130hd.lylvs" "$DESIGN_DIR/sky130hd.lylvs"
+
+python3 - "$DESIGN_DIR/sky130hd.lylvs" <<'PYEOF'
+import sys
+
+p = sys.argv[1]
+s = open(p).read()
+marker = 'connect_global(SUB, "VNB")'
+add = '''connect_global(SUB, "VNB")
+
+n_vdd  = find_net_by_name_component(c, "VDD")
+n_vccd = find_net_by_name_component(c, "vccd1")
+c.join_nets(n_vdd, n_vccd) if n_vdd && n_vccd && n_vdd.name != n_vccd.name
+n_vss  = find_net_by_name_component(c, "VSS")
+n_vssd = find_net_by_name_component(c, "vssd1")
+c.join_nets(n_vss, n_vssd) if n_vss && n_vssd && n_vss.name != n_vssd.name'''
+if marker in s:
+    s = s.replace(marker, add, 1)
+    print("lvs deck patched: vccd1/vssd1 -> VDD/VSS")
+else:
+    print("lvs deck marker not found")
+open(p, "w").write(s)
 PYEOF
 
 cd "$DEST"
