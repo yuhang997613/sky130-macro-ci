@@ -92,8 +92,12 @@ import sys
 
 p = sys.argv[1]
 s = open(p).read()
-# blackbox the OpenRAM macro: only boundary connectivity is compared
-s = s.replace("<text>", '<text>\nblackbox("sky130_sram_1kbyte_1rw1r_32x256_8")', 1)
+# blackbox the OpenRAM macro for the compare (blank_circuit is the LVS API)
+if "blank_circuit" not in s:
+    anchor = "\nif ! compare"
+    inject = ('\nblank_circuit("sky130_sram_1kbyte_1rw1r_32x256_8")\n'
+              'blank_circuit("SKY130_SRAM_1KBYTE_1RW1R_32X256_8")\n')
+    s = s.replace(anchor, inject + anchor, 1)
 marker = 'connect_global(SUB, "VNB")'
 add = '''connect_global(SUB, "VNB")
 
