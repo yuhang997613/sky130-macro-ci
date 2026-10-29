@@ -91,13 +91,17 @@ python3 - "$DESIGN_DIR/sky130hd.lylvs" <<'PYEOF'
 import sys
 
 p = sys.argv[1]
-s = open(p).read()
+s = open(p).read().replace("\r\n", "\n")
 # blackbox the OpenRAM macro for the compare (blank_circuit is the LVS API)
 if "blank_circuit" not in s:
     anchor = "\nif ! compare"
     inject = ('\nblank_circuit("sky130_sram_1kbyte_1rw1r_32x256_8")\n'
               'blank_circuit("SKY130_SRAM_1KBYTE_1RW1R_32X256_8")\n')
-    s = s.replace(anchor, inject + anchor, 1)
+    if anchor in s:
+        s = s.replace(anchor, inject + anchor, 1)
+        print("blank_circuit injected")
+    else:
+        print("blank_circuit anchor missing")
 marker = 'connect_global(SUB, "VNB")'
 add = '''connect_global(SUB, "VNB")
 
