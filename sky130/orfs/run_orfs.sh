@@ -118,3 +118,8 @@ ls -l results/sky130hd/mlc_storage_macro/base 2>/dev/null || true
 # export ORFS results for artifact upload
 mkdir -p /work/sky130/out/orfs_results
 cp -r results/sky130hd/mlc_storage_macro/base/* /work/sky130/out/orfs_results/ 2>/dev/null || true
+
+# dump LVS DB mismatches with the container's full KLayout (Ruby stdlib available)
+klayout -b -r /work/sky130/tools/dump_lvsdb.rb \
+  -rd file=/OpenROAD-flow-scripts/flow/results/sky130hd/mlc_storage_macro/base/6_lvs.lvsdb \
+  2>&1 | tee /work/sky130/out/lvs_dump.txt || true
