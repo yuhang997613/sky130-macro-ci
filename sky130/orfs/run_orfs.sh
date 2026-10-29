@@ -92,6 +92,8 @@ import sys
 
 p = sys.argv[1]
 s = open(p).read()
+# blackbox the OpenRAM macro: only boundary connectivity is compared
+s = s.replace("<text>", '<text>\nblackbox("sky130_sram_1kbyte_1rw1r_32x256_8")', 1)
 marker = 'connect_global(SUB, "VNB")'
 add = '''connect_global(SUB, "VNB")
 
