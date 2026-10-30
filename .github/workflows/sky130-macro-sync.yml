@@ -1,0 +1,26 @@
+name: sky130-macro-sync
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'sky130/macros/**'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify OpenRAM macro files
+        run: |
+          cd sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8
+          ls -l
+          sha256sum -c MANIFEST.sha256
+
+      - name: Upload macro artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sky130-openram-macro
+          path: sky130/macros/sky130_sram_1kbyte_1rw1r_32x256_8/
